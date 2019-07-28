@@ -31,15 +31,15 @@ teacher_transform = transforms.Compose([
     transforms.ToTensor(),
     # transforms.Normalize((0.1307,), (0.3081,))
     ])
-val_transform = transforms.Compose([
-    torchvision.transforms.Resize((512, 512), interpolation=2),
-    transforms.ToTensor(),
-    ])
+# val_transform = transforms.Compose([
+#     torchvision.transforms.Resize((512, 512), interpolation=2),
+#     transforms.ToTensor(),
+#     ])
 
 
 datasets = Segmentation_dataset(dataset_base_path, "JPEGImages", "SegmentationClass", original_transform, teacher_transform, loader=default_image_loader) #  (original_img, anotation_img)
 
-dataloader = torch.utils.data.DataLoader(data_set, batch_size=8, shuffle=True)
+train_loader = torch.utils.data.DataLoader(data_set, batch_size=8, shuffle=True)
 
 # train_size = len(datasets)*9//10
 # val_size = len(datasets) - train_size
@@ -78,8 +78,8 @@ def train(epoch):
         model.train()
         optimizer.zero_grad()
         data, target = data.cuda(), target.cuda()
-        embedded = model(data)
-        loss = criterion(embedded, target)
+        output = model(data)
+        loss = criterion(output, target)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -87,20 +87,24 @@ def train(epoch):
 
         if batch_idx % 20 == 0:
             #validation
-            model.eval()
-            with torch.no_grad():
-                val_losses = 0.0
-                for idx, (data, target) in enumerate(val_loader):
-                    data, target = data.cuda(), target.cuda()
-                    embedded = model(data)
-                    val_loss = criterion(embedded, target)
-                    val_losses += val_loss
-            mean_val_loss = val_losses/len(val_loader)
-            writer.add_scalar("loss/val_loss", loss.item(), (len(train_loader)*(epoch-1)+batch_idx))
+            # model.eval()
+            # with torch.no_grad():
+            #     val_losses = 0.0
+            #     for idx, (data, target) in enumerate(val_loader):
+            #         data, target = data.cuda(), target.cuda()
+            #         embedded = model(data)
+            #         val_loss = criterion(embedded, target)
+            #         val_losses += val_loss
+            # mean_val_loss = val_losses/len(val_loader)
+            # writer.add_scalar("loss/val_loss", loss.item(), (len(train_loader)*(epoch-1)+batch_idx))
             print('Train Epoch: {:>3} [{:>5}/{:>5} ({:>3.0f}%)]\ttrain_loss: {:>2.4f}\tval_loss: {:>2.4f}'.format(
                 epoch,
                 batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader),
                 loss.item(), val_loss))
+            print('Train Epoch: {:>3} [{:>5}/{:>5} ({:>3.0f}%)]\ttrain_loss: {:>2.4f}'.format(
+                epoch,
+                batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader),
+                loss.item()))
 
 
 
