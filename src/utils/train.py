@@ -13,15 +13,20 @@ import torchvision.models as models
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data.dataset import Subset
 
-from modules.Loss import Angular_mc_loss, Angular_mc_loss, N_plus_1_Loss, n_pair_mc_loss
-from modules.Sampler import BalancedBatchSampler
-from models.CNN_3 import CNN_3
+from modules.loss import cross_entropy2d, multi_scale_cross_entropy2d, bootstrapped_cross_entropy2d
+from modules.datasets import Segmentation_dataset
+from models.unet import UNet
 
 base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-traindata_path = os.path.join(os.path.dirname(base_path), "datasets", "VOCdevkit", "VOC2012_trainval") # dataset path
+dataset_base_path = os.path.join(os.path.dirname(base_path), "datasets", "VOCdevkit", "VOC2012_trainval") # dataset path
 
-train_transform = transforms.Compose([
+original_transform = transforms.Compose([
+    torchvision.transforms.Resize((512, 512), interpolation=2),
+    transforms.ToTensor(),
+    # transforms.Normalize((0.1307,), (0.3081,))
+    ])
+teacher_transform = transforms.Compose([
     torchvision.transforms.Resize((512, 512), interpolation=2),
     transforms.ToTensor(),
     # transforms.Normalize((0.1307,), (0.3081,))
@@ -32,18 +37,20 @@ val_transform = transforms.Compose([
     ])
 
 
-datasets = image_loader() # datasets[index]  return (original_img, anotation_img)
+datasets = Segmentation_dataset(dataset_base_path, "JPEGImages", "SegmentationClass", original_transform, teacher_transform, loader=default_image_loader) #  (original_img, anotation_img)
 
-train_size = len(datasets)*9//10
-val_size = len(datasets) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(datasets, [train_size, val_size])
+dataloader = torch.utils.data.DataLoader(data_set, batch_size=8, shuffle=True)
 
-train_loader = torch.utils.data.DataLoader(train_dataset, )
-val_loader = torch.utils.data.DataLoader(val_dataset, )
+# train_size = len(datasets)*9//10
+# val_size = len(datasets) - train_size
+# train_dataset, val_dataset = torch.utils.data.random_split(datasets, [train_size, val_size])
+
+# train_loader = torch.utils.data.DataLoader(train_dataset, )
+# val_loader = torch.utils.data.DataLoader(val_dataset, )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = CNN_3().to(device)
-criterion = Angular_mc_loss()
+model = UNet().to(device)
+criterion = cross_entropy2d()
 optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 
 
@@ -57,7 +64,7 @@ log_name = "{}{:02}{:02}_{:02}_{}".format(dt.year, dt.month, dt.day, model_id, m
 log_path = os.path.join(logdir_path, log_name)
 writer = SummaryWriter(log_dir=log_path)
 
-epochs = 20
+epochs = 200
 
 
 def adjust_learning_rate(optimizer, epoch):

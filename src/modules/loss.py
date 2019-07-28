@@ -70,7 +70,8 @@ def bootstrapped_cross_entropy2d(input, target, K, weight=None, size_average=Tru
         )
     return loss / float(batch_size)
 
-input = torch.randn(8, 3, 224, 224)
-target = torch.LongTensor(8, 224, 224)
-loss = cross_entropy2d(input, target)
-print(loss)
+if __name__ == "__main__":
+    input = torch.randn(8, 3, 224, 224)
+    target = torch.LongTensor(8, 224, 224)
+    loss = cross_entropy2d(input, target)
+    print(loss)
