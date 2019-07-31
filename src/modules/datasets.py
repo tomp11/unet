@@ -8,16 +8,16 @@ import numpy as np
 
 
 
-
-def default_image_loader(path):
-    return Image.open(path)
-
 """
+torchvision.datasets.VOCSegmentationがあったので使わなかった
+mirroringとかするときに自分で作ってもいいかも
 original directoryとteacher directory
 originalは.jpg
 teacherは.png
 """
 
+def default_image_loader(path):
+    return Image.open(path)
 
 class Segmentation_dataset(torch.utils.data.Dataset):
 

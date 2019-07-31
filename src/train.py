@@ -18,7 +18,7 @@ from modules.datasets import Segmentation_dataset
 from modules.transforms import original_transform, teacher_transform
 from models.unet import UNet
 
-base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # /unet
 
 dataroot = os.path.join(os.path.dirname(base_path), "datasets")
 if not os.path.exists(dataroot):
