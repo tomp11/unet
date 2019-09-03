@@ -22,6 +22,7 @@ teacherは.png
 class Segmentation_dataset(torch.utils.data.Dataset):
 
     def __init__(self, dataset_base_path, original_dirname, teacher_dirname, original_transform, teacher_transform, loader=default_image_loader):
+        self.n_classes = 21
         self.dataset_base_path = dataset_base_path
         self.original_dir_path = os.path.join(dataset_base_path, original_dirname)
         self.teacher_dir_path = os.path.join(dataset_base_path, teacher_dirname)
@@ -38,7 +39,7 @@ class Segmentation_dataset(torch.utils.data.Dataset):
         #     img = self.loader(path)
         #     return img
         original_img = self.loader(os.path.join(self.dataset_base_path, self.original_dir_path, self.original_img_list[index]))
-        size = size = min(original_img.size)
+        size = min(original_img.size)
         left, upper =  (original_img.width - size) // 2, (original_img.height - size) // 2
         # 画像を正方形にするresizeするときに歪まないから
         # このなかでやるのは正方形にするだけ。あとは引数に任せる
@@ -46,7 +47,13 @@ class Segmentation_dataset(torch.utils.data.Dataset):
 
         teacher_img = self.loader(os.path.join(self.dataset_base_path, self.teacher_dir_path, self.teacher_img_list[index]))
         teacher_img = self.teacher_transform(transforms.functional.crop(teacher_img, upper, left, size, size))
-        return original_img, teacher_img
+        
+        # lossでonhotにしようと思ったけど、backwardできないってerror出るのでこっちでonehotにする。こっちは１枚づつなのでちょっとコード違う
+        teacher_onehot = torch.LongTensor(self.n_classes, size, size)
+        teacher_img = teacher_img.unsqueeze_(0)
+        teacher_onehot = teacher_onehot.scatter_(0, teacher_img, 1)
+
+        return original_img, teacher_onehot
 
     def __len__(self):
         return len(self.teacher_img_list)
@@ -102,4 +109,5 @@ if __name__ =="__main__":
     print()
     # if img_array.all() == img_array2.all():
     #     print("同じだよ")
-    img2.show()
+
+    img2.show() # なぜかうまくいかない
